@@ -31,58 +31,108 @@ For the current problem, you can consider the size of cache = 5.
 Here is some boiler plate code and some example test cases to get you started on this problem:
 """
 
+class DoubleNode:
+    def __init__(self, value):
+        self.value = value
+        self.next = None
+        self.previous = None
+
+
+class DoublyLinkedList:
+    def __init__(self):
+        self.head = None
+        self.tail = None
+        self.size = 0
+
+    def append(self, value):
+        if self.head is None:
+            self.head = DoubleNode(value)
+            self.tail = self.head
+            return
+        self.tail.next = DoubleNode(value)
+        self.tail.next.previous = self.tail
+        self.tail = self.tail.next
+        return
+
+    def print_linked_list(self):
+        output_list = []
+        current_node = self.head
+        while current_node is not None:
+            output_list.append(current_node.value)
+            current_node = current_node.next
+        print(output_list)
+
 
 class LRU_Cache(object):
     def __init__(self, capacity):
-        self.contents = [None for i in range(capacity)]
-        self.size = len(self.contents)
-        self.last_in = None
-        self.last_in_index = None
+        self.bucket_array = [None for i in range(capacity)]
+        self.capacity = capacity
+        self.key_list = DoublyLinkedList()
+        self.num_entries = 0
 
     def get(self, key):
         # Retrieve item from provided key. Return -1 if nonexistent.
         key = key - 1
-        if key > self.size:
+        if key > self.num_entries:
             return -1
-        elif self.contents[key] is not None:
-            return self.contents[key]
+        elif self.bucket_array[key] is not None:
+
+            temporary = self.key_list.head
+            self.key_list.head = self.key_list.head.next
+            self.key_list.tail.next = temporary
+            self.key_list.tail = self.key_list.tail.next
+
+            return self.bucket_array[key]
         else:
             return -1
 
     def set(self, key, value):
+        # Set the value if the key is not present in the cache. If the cache is at capacity remove the oldest item.
+
         key = key - 1
-        if key >= self.size:
-            key = key % self.size
-        print(key)
-        if self.contents[key] is None:
-            self.contents[key] = value
-            self.last_in = value
-            self.last_in_index = key
+        if key >= self.capacity:
+            key = key % self.capacity
+        if self.bucket_array[key] is None:
+            self.bucket_array[key] = value
+            self.num_entries += 1
+            if self.key_list.head is None:
+                self.key_list.head = DoubleNode(key)
+                self.key_list.tail = self.key_list.head
+            else:
+                self.key_list.append(key)
         else:
-            self.contents[self.last_in_index] = value
-            self.last_in = value
-            self.last_in_index = key
+            if self.num_entries == self.capacity:
+                key_to_remove = self.key_list.head.value
+                self.bucket_array[key_to_remove] = None
+                self.num_entries -= 1
+            else:
+                print("That key is filled, but others are open. Take a look!")
+        print("Fill level is now at {}".format(self.num_entries))
 
 
 our_cache = LRU_Cache(5)
 
-our_cache.set(3, 3);
-print(our_cache.contents)
-our_cache.set(4, 4);
-print(our_cache.contents)
-our_cache.set(1, 1);
-print(our_cache.contents)
-our_cache.set(2, 2);
-print(our_cache.contents)
+our_cache.set(1, 1)
+print("This is the current bucket array: {}".format(our_cache.bucket_array))
+our_cache.key_list.print_linked_list()
+our_cache.set(2, 2)
+print("This is the current bucket array: {}".format(our_cache.bucket_array))
+our_cache.key_list.print_linked_list()
+our_cache.set(3, 3)
+print("This is the current bucket array: {}".format(our_cache.bucket_array))
+our_cache.key_list.print_linked_list()
+our_cache.set(4, 4)
+print("This is the current bucket array: {}".format(our_cache.bucket_array))
+our_cache.key_list.print_linked_list()
 
 
-
-print(our_cache.get(1))      # returns 1
-print(our_cache.get(2))    # returns 2
+print(our_cache.get(1))       # returns 1
+print(our_cache.get(2))     # returns 2
 print(our_cache.get(9))     # returns -1 because 9 is not present in the cache
 
-
+our_cache.set(5, 5)
+print(our_cache.bucket_array)
 our_cache.set(6, 6)
-print(our_cache.contents)
+print(our_cache.bucket_array)
 
-print(our_cache.get(3))
+print(our_cache.get(3))   # returns -1 because the cache reached it's capacity and 3 was the least recently used entry
